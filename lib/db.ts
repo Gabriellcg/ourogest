@@ -1,4 +1,4 @@
-import mysql, { Pool, RowDataPacket } from "mysql2/promise"; // iMPORTANDO O PACOTE DO MYSQL
+import mysql, { Pool, PoolConnection, RowDataPacket, ResultSetHeader } from "mysql2/promise"; // iMPORTANDO O PACOTE DO MYSQL
 
 //AVISA O TS QUE PODEMOS GUARDAR O POOL NA MEMÓRIA LOCAL DO NODE
 declare global {
@@ -29,6 +29,31 @@ export async function query<T = RowDataPacket[] >(
 ): Promise<T> {
     const [rows] = await pool.execute(sql, params); // EVITA O ATAQUE SQL INJECTION, pois ENVIA SEPARADAMENTE A CONSULTA DOS PARAMETROS 
     return rows as T;
+}
+
+export async function execute(
+    sql: string,
+    params: unknown[] = [],
+): Promise<ResultSetHeader>{
+    const [result] = await pool.execute(sql, params);
+    return result as ResultSetHeader;
+}
+
+export async function withTransaction<T>(
+    callback: (connection: PoolConnection) => Promise<T>
+):  Promise<T>{
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        const result = await callback(connection);
+        await connection.commit();
+        return result;
+    } catch (error) {
+        await connection.rollback();
+        throw error; // Repassa o erro de banco para o usuário final.
+    } finally{
+        connection.release();
+    }
 }
 
 export default pool; // DISPONIBILIZA PARA OUTROS ARQUIVOS UTILIZAREM
