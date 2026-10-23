@@ -1,56 +1,65 @@
-💍 OuroGest — Sistema SaaS Multi-Loja para Gestão de Joalherias
-O OuroGest é uma aplicação web moderna do tipo SaaS (Software as a Service) desenvolvida sob medida para a gestão completa e isolada de múltiplas lojas do ramo joalheiro. O projeto foca em alto desempenho, segurança de dados e arquitetura centralizada.
+# 💎 OuroGest — Sistema Web de Gestão e Vendas para Joalherias
 
-🚀 Tecnologias Utilizadas (Tech Stack)
-Framework: Next.js (App Router com TypeScript)
+Sistema web Multi-loja (SaaS) para venda de ouro sob medida: cálculo de gramas pela medida geométrica e quilate, registro de vendas com controle de parcelamento, acompanhamento de etapas de produção e entregas, ajuste de peso final na balança e lembretes de recompra e cobrança via WhatsApp.
 
-Estilização: Tailwind CSS
+**Versão da Documentação:** 1.2 (23/10/2026)
 
-Banco de Dados: MariaDB 10.11 (executado via Docker em ambiente WSL 2)
+---
 
-Driver de Conexão: mysql2/promise (com suporte a Prepared Statements contra SQL Injection)
+## 🚀 Stack e Tecnologias
 
-Segurança e Autenticação: bcryptjs (hash de senhas) e iron-session (sessões criptografadas baseadas em cookies)
+- **Front-end e Rotas:** Next.js (App Router) com TypeScript
+- **Estilização:** Tailwind CSS (Paleta dourado, grafite e marfim) + Lucide Icons
+- **Banco de Dados:** MariaDB (suporte a Stored Procedures, Triggers, Views e colunas calculadas)
+- **Acesso ao Banco:** `mysql2/promise` (Pool de conexões, suporte a `CALL` e transações)
+- **Autenticação e Sessão:** `bcryptjs` (hash de senhas) e `iron-session` (cookie HTTP-Only criptografado)
+- **Validação:** Zod (no cliente e no servidor)
+- **Infraestrutura:** Docker / Docker Compose
 
-Validação: Zod
+---
 
-🏛️ Arquitetura e Decisões de Projeto
-Isolamento Multi-Loja (Multi-Tenant): Estrutura de banco de dados relacional desenhada para garantir que os dados de cada joalheria fiquem estritamente segregados.
+## 💳 Modelo de Uso SaaS: Teste Grátis (Trial) e Assinatura
 
-Centralização do Banco (lib/db.ts): Toda a comunicação com o MariaDB é unificada por meio de um Pool de Conexões otimizado, prevenindo vazamentos de conexões (connection leaks) e gerando transações seguras (transactions com rollback automático).
+O **OuroGest** opera no modelo Multi-loja (SaaS), garantindo isolamento total onde cada conta enxerga apenas os dados da própria joalheria (`loja_id`):
 
-Segurança Rigorosa:
+1. **Cadastro com Teste Grátis (7 dias):** Ao criar uma conta em `/cadastro`, a joalheria nasce automaticamente com `status_assinatura = 'trial'` e prazo `trial_expira_em` definido para **7 dias** a partir do cadastro.
+2. **Acesso Liberado:** Lojas com `status_assinatura = 'ativa'` ou em `'trial'` dentro do prazo de 7 dias acessam todas as telas operacionais normalmente.
+3. **Bloqueio Automático por Vencimento (`middleware.ts`):** Se o prazo do `trial` expirar (data atual maior que `trial_expira_em`) ou se o status for `'vencida'` ou `'bloqueada'`, o `middleware.ts` impede o acesso às telas operacionais e redireciona o usuário logado para `/assinatura` (para pagamento/ativação com o suporte).
+4. **Preservação de Dados:** Nenhum dado da joalheria é apagado quando o teste grátis vence.
 
-Utilização exclusiva de um usuário restrito da aplicação (ourogest_app), evitando o uso do usuário administrador (root).
+---
 
-Gerenciamento estrito de segredos e credenciais via variáveis de ambiente (.env.local), mantidos fora do controle de versão.
+## 🗄️ Modelo de Dados (MariaDB)
 
-📋 Estrutura do Banco de Dados
-O sistema conta com uma estrutura robusta contendo:
+O banco de dados `ourogest` utiliza chaves compostas com `loja_id` para impedir o cruzamento de registros entre lojas diferentes:
 
-7 Tabelas Principais: lojas, usuarios, configuracoes, clientes, vendas, parcelas, vendas_historico.
+### Tabelas (`db/schema.sql`)
+1. **`lojas`**: Cadastro da joalheria, `status_assinatura` (`'trial'`, `'ativa'`, `'vencida'`, `'bloqueada'`) e `trial_expira_em`.
+2. **`usuarios`**: Login com e-mail único, hash da senha, vínculo com a loja e papel (`'dono'` ou `'funcionario'`).
+3. **`configuracoes`**: Cotação do ouro 24k, mão de obra padrão, dias para recompra e tolerância de peso.
+4. **`clientes`**: Nome, telefone e data do último contato (`ultimo_contato`).
+5. **`vendas`**: Peça, quilate, gramas estimadas, valor, etapa da produção, modalidade de pagamento, preço do grama no dia, peso final, ajuste de peso e valor final (coluna calculada).
+6. **`parcelas`**: Pagamentos combinados (tipo, valor, vencimento, data/valor pagos e forma de pagamento).
+7. **`vendas_historico`**: Auditoria de cada mudança de etapa da produção (quem alterou, quando e motivo).
 
-Views e Procedures: Automatizações em nível de banco para relatórios financeiros, lembretes de recompra e controle de cobranças pendentes.
+### Stored Procedures (`CALL`) e Views
+- **Procedures:** `gerar_parcelas`, `registrar_pagamento`, `sugerir_ajuste_peso`, `registrar_peso_final`, `mover_etapa` e `desfazer_peso_final`.
+- **Views:** `vendas_financeiro` (total pago, saldo e status), `lembretes_recompra` e `lembretes_cobranca`.
 
-⚙️ Como Executar o Projeto Localmente
-Clone o repositório:
+---
 
-Bash
-git clone https://github.com/Gabriellcg/ourogest.git
-cd ourogest
-Instale as dependências:
+## 📋 Plano de Desenvolvimento (Roadmap)
 
-Bash
-npm install
-Configure as variáveis de ambiente:
-Crie um arquivo .env.local na raiz com base nas orientações de configuração do banco e da sessão.
-
-Inicie o banco de dados via Docker:
-
-Bash
-docker compose up -d
-Execute o servidor de desenvolvimento:
-
-Bash
-npm run dev
-Acesse http://localhost:3000 no seu navegador.
+- [ ] **Fase 1 — Base:**
+  - [x] Projeto Next.js, variáveis de ambiente (`.env.local`) e container MariaDB no Docker
+  - [x] Camada de conexão e transações SQL (`lib/db.ts`)
+  - [x] Hash de senhas e controle de sessão criptografada (`lib/auth.ts`)
+  - [x] Proteção global de rotas (`middleware.ts`)
+  - [ ] Alinhamento do banco (`db/schema.sql`) e sessão com o modelo de Trial de 7 dias
+  - [ ] Telas e rotas de Login, Cadastro (Trial), `/assinatura` e Menu Lateral
+- [ ] **Fase 2 — Calculadora:** `lib/calculo.ts` com testes, tela `/calculadora` e `/configuracoes`
+- [ ] **Fase 3 — Vendas e Pagamentos:** Nova venda, `gerar_parcelas`, lista, detalhe, `registrar_pagamento` e indicadores
+- [ ] **Fase 4 — Produção:** Quadro Kanban (`/producao`), `mover_etapa`, devolução com motivo, peso final e ajuste
+- [ ] **Fase 5 — Lembretes e Papéis:** Recompra, cobrança, links de WhatsApp e restrições por papel (`dono` vs `funcionario`)
+- [ ] **Fase 6 — Acabamento:** Responsividade mobile, estados de carregamento/erro e validações com Zod
+- [ ] **Fase 7 — Publicação:** Deploy via Docker Compose + Caddy (HTTPS) e rotina de backup
