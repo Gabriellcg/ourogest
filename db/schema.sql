@@ -15,6 +15,11 @@ SET NAMES utf8mb4;
 CREATE TABLE lojas (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   nome VARCHAR(150) NOT NULL,
+  -- Teste grátis e assinatura: a loja nasce em 'trial' com 7 dias de acesso completo.
+  -- Vencido o prazo (ou status 'vencida'/'bloqueada'), o middleware redireciona para /assinatura.
+  -- Nenhum dado é apagado quando o teste vence.
+  status_assinatura ENUM('trial','ativa','vencida','bloqueada') NOT NULL DEFAULT 'trial',
+  trial_expira_em DATETIME NOT NULL DEFAULT (NOW() + INTERVAL 7 DAY),
   criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -391,3 +396,13 @@ SELECT c.loja_id, c.id AS cliente_id, c.nome, c.telefone, v.descricao AS ultima_
    AND (c.ultimo_contato IS NULL OR c.ultimo_contato < v.data_entrega)
    AND NOT EXISTS (SELECT 1 FROM vendas v3 JOIN parcelas p ON p.venda_id = v3.id
                     WHERE v3.cliente_id = c.id AND p.pago_em IS NULL);
+
+-- Acesso liberado? Consulte a cada requisição (ou com cache curto) no middleware.
+-- liberado = assinatura 'ativa', ou 'trial' dentro do prazo. Consulte com WHERE loja_id = ?
+CREATE VIEW lojas_acesso AS
+SELECT id AS loja_id, status_assinatura, trial_expira_em,
+       CASE WHEN status_assinatura = 'ativa' THEN 1
+            WHEN status_assinatura = 'trial' AND NOW() <= trial_expira_em THEN 1
+            ELSE 0 END AS acesso_liberado,
+       GREATEST(0, DATEDIFF(trial_expira_em, CURRENT_DATE)) AS dias_restantes_trial
+  FROM lojas;
