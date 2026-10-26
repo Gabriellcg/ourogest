@@ -9,6 +9,9 @@ export interface SessionUser {
     nome: string;
     email: string;
     loja_nome: string;
+    papel: "dono" | "funcionario";
+    status_assinatura: "trial" | "ativa" | "vencida" | "bloqueada";
+    trial_expira_em: string | null;
 }
 
 //Definindo que a sessão pode ter um usuário
