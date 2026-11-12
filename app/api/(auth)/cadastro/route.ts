@@ -53,7 +53,7 @@ export async function POST(request:NextRequest) {
 
             const [resUsuario] = await conn.execute<ResultSetHeader>(
                 "INSERT INTO usuarios (loja_id, nome, email, senha_hash, papel) VALUES (?,?,?,?,'dono')",
-                [loja_id, nome.trim(), emailFormatado, senhaHash]
+                [lojaId, nome.trim(), emailFormatado, senhaHash]
             );
 
             const usuarioId = resUsuario.insertId;
@@ -64,14 +64,14 @@ export async function POST(request:NextRequest) {
             );
 
             const [lojas] = await conn.query<LojaRow[]>(
-                "SELECT status_assinatura, trial_expire_em FROM lojas WHERE id = ?",
+                "SELECT status_assinatura, trial_expira_em FROM lojas WHERE id = ?",
                 [lojaId]
             );
 
             return {
                 id: usuarioId,
                 loja_id: lojaId,
-                nome: nome.trim().
+                nome: nome.trim(),
                 email: emailFormatado,
                 loja_nome: loja_nome.trim(),
                 papel: "dono" as const,

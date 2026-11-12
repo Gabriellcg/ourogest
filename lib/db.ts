@@ -23,9 +23,12 @@ if (process.env.NODE_ENV !== "production") {
     global.mysqlPool = pool;
 }
 
+// TIPO ACEITO PELO pool.execute COMO PARÂMETROS (o mysql2 não exporta esse tipo)
+type SqlParams = NonNullable<Parameters<Pool["execute"]>[1]>;
+
 export async function query<T = RowDataPacket[] >(
     sql: string,
-    params: unknown[] = []    
+    params: SqlParams = []    
 ): Promise<T> {
     const [rows] = await pool.execute(sql, params); // EVITA O ATAQUE SQL INJECTION, pois ENVIA SEPARADAMENTE A CONSULTA DOS PARAMETROS 
     return rows as T;
@@ -33,7 +36,7 @@ export async function query<T = RowDataPacket[] >(
 
 export async function execute(
     sql: string,
-    params: unknown[] = [],
+    params: SqlParams = [],
 ): Promise<ResultSetHeader>{
     const [result] = await pool.execute(sql, params);
     return result as ResultSetHeader;
