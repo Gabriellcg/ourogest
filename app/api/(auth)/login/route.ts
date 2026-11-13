@@ -23,7 +23,12 @@ interface UsuarioLojaRow extends RowDataPacket {
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
+        let body: unknown;
+        try {
+            body = await request.json();
+        } catch {
+            return NextResponse.json({ error: "Corpo da requisição inválido." }, { status: 400 });
+        }
 
         const validacao = loginSchema.safeParse(body);
         if (!validacao.success) {

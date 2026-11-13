@@ -1,6 +1,7 @@
 import {NextRequest, NextResponse} from "next/server";
 import {getIronSession} from "iron-session";
 import {sessionOptions, SessionData} from "./lib/auth";
+import {acessoBloqueado} from "./lib/assinatura";
 
 const protectedRoutes = [
     "/dashboard",
@@ -43,16 +44,7 @@ export async function middleware(request: NextRequest){
 
     if (isAuthenticated && session.user) {
         const {status_assinatura, trial_expira_em} = session.user;
-        const agora = new Date();
-        const dataExpiracao = trial_expira_em ? new Date(trial_expira_em): null;
-
-        const trialExpirado =
-            status_assinatura === "trial" && (!dataExpiracao || agora > dataExpiracao);
-
-        const assinaturaInativa =
-            status_assinatura === "vencida" || status_assinatura === "bloqueada";
-
-        const bloqueadoPorAssinatura = trialExpirado || assinaturaInativa;
+        const bloqueadoPorAssinatura = acessoBloqueado(status_assinatura, trial_expira_em);
 
         if (isProtectedRoute && bloqueadoPorAssinatura) {
             return NextResponse.redirect(new URL("/assinatura", request.url));

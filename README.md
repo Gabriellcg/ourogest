@@ -50,13 +50,14 @@ O banco de dados `ourogest` utiliza chaves compostas com `loja_id` para impedir 
 
 ## 📋 Plano de Desenvolvimento (Roadmap)
 
-- [ ] **Fase 1 — Base:**
+- [x] **Fase 1 — Base:**
   - [x] Projeto Next.js, variáveis de ambiente (`.env.local`) e container MariaDB no Docker
   - [x] Camada de conexão e transações SQL (`lib/db.ts`)
   - [x] Hash de senhas e controle de sessão criptografada (`lib/auth.ts`)
   - [x] Proteção global de rotas (`middleware.ts`)
-  - [ ] Alinhamento do banco (`db/schema.sql`) e sessão com o modelo de Trial de 7 dias
-  - [ ] Telas e rotas de Login, Cadastro (Trial), `/assinatura` e Menu Lateral
+  - [x] Alinhamento do banco (`db/schema.sql`) e sessão com o modelo de Trial de 7 dias
+  - [x] Telas e rotas de Login, Cadastro (Trial), `/assinatura` e Menu Lateral
+  - [x] Validação ponta a ponta: `npm test` (unitários) e `scripts/validar-fase1.sh` (64 verificações contra o banco)
 - [ ] **Fase 2 — Calculadora:** `lib/calculo.ts` com testes, tela `/calculadora` e `/configuracoes`
 - [ ] **Fase 3 — Vendas e Pagamentos:** Nova venda, `gerar_parcelas`, lista, detalhe, `registrar_pagamento` e indicadores
 - [ ] **Fase 4 — Produção:** Quadro Kanban (`/producao`), `mover_etapa`, devolução com motivo, peso final e ajuste

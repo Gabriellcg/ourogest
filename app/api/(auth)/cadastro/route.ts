@@ -18,7 +18,12 @@ interface LojaRow extends RowDataPacket{
 
 export async function POST(request:NextRequest) {
     try {
-        const body = await request.json();
+        let body: unknown;
+        try {
+            body = await request.json();
+        } catch {
+            return NextResponse.json({error: "Corpo da requisição inválido."}, {status: 400});
+        }
 
         const validacao = cadastroSchema.safeParse(body);
         if (!validacao.success) {
@@ -89,6 +94,13 @@ export async function POST(request:NextRequest) {
             {status: 201}
         )
     } catch (error) {
+        // Dois cadastros simultâneos com o mesmo e-mail: o índice único do banco recusa o segundo
+        if ((error as { code?: string }).code === "ER_DUP_ENTRY") {
+            return NextResponse.json(
+                {error: "Este e-mail já está cadastrado no sistema."},
+                {status: 409}
+            );
+        }
         console.error("Erro ao cadastrar loja:", error);
         return NextResponse.json(
             {error: "Erro interno ao criar a conta. Tente novamente."},
